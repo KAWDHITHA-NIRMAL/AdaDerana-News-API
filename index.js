@@ -62,7 +62,7 @@ app.get('/news', async (req, res) => {
         image: imageUrl,
         time: fullTime,
         new_url: newsUrl,
- powerd_by: "🌴NB DEV SL🌴 ⚠️if yo are use this api give the credits to owner⚠️"     
+ powerd_by: "> Powerd By Kawdhitha Nirmal"     
       };
 
       res.json([newsData]);
