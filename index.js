@@ -59,7 +59,7 @@ app.get('/', async (req, res) => {
         image: imageUrl,
         time: fullTime,
         new_url: newsUrl,
-        creator: "Pink-Venom"
+        creator: "Kawdhitha-Nirmal"
       };
 
       res.json(newsData);
