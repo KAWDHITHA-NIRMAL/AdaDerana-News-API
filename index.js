@@ -10,16 +10,13 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   next();
 });
+
 async function scrapeDescription(newsUrl) {
   try {
     const response = await axios.get(newsUrl);
     if (response.status === 200) {
       const $ = cheerio.load(response.data);
-      let paragraphs = [];
-      $('.news-content p').each((i, el) => {
-        paragraphs.push($(el).text().trim());
-      });
-      const newsDescription = paragraphs.join('\n\n');
+      const newsDescription = $('.news-content p').text();
       return newsDescription;
     }
   } catch (error) {
@@ -33,7 +30,7 @@ async function scrapeImage(newsUrl) {
     const response = await axios.get(newsUrl);
     if (response.status === 200) {
       const $ = cheerio.load(response.data);
-     const imageUrl = $('div.news-banner img.img-responsive').attr('src');
+      const imageUrl = $('div.news-banner img.img-responsive').attr('src');
       return imageUrl;
     }
   } catch (error) {
@@ -42,8 +39,8 @@ async function scrapeImage(newsUrl) {
   return '';
 }
 
-// Route 
-app.get('/news', async (req, res) => {
+// Route
+app.get('/', async (req, res) => {
   try {
     const response = await axios.get(url);
     if (response.status === 200) {
@@ -62,10 +59,10 @@ app.get('/news', async (req, res) => {
         image: imageUrl,
         time: fullTime,
         new_url: newsUrl,
- powerd_by: "> Powerd By Kawdhitha Nirmal"     
+        creator: "Pink-Venom"
       };
 
-      res.json([newsData]);
+      res.json(newsData);
     } else {
       throw new Error('Failed to fetch data from the website');
     }
@@ -74,6 +71,4 @@ app.get('/news', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+module.exports = app;
