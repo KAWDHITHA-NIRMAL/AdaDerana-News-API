@@ -1,74 +1,48 @@
 const express = require('express');
 const axios = require('axios');
-const cheerio = require('cheerio');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const url = 'https://sinhala.adaderana.lk/sinhala-hot-news.php';
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  next();
-});
+const GEMINI_API_KEY = 'AIzaSyAl1xKkee6MGoQ46fOl_uxEsDFrZq9pYJw';  // Replace with your Gemini API Key
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-async function scrapeDescription(newsUrl) {
-  try {
-    const response = await axios.get(newsUrl);
-    if (response.status === 200) {
-      const $ = cheerio.load(response.data);
-      const newsDescription = $('.news-content p').text();
-      return newsDescription;
-    }
-  } catch (error) {
-    console.error('Error scraping description:', error);
+app.use(express.json());
+
+app.post('/ask-ai', async (req, res) => {
+  const { question } = req.body;
+  if (!question) {
+    return res.status(400).json({ error: "Please provide a question." });
   }
-  return '';
-}
 
-async function scrapeImage(newsUrl) {
+  const prompt = `මම අසන ප්‍රශ්න වලට සිංහලෙන් පිළිතුරු දෙන්න. ඔබේ නම Kawdhitha AI. ඔබ WhatsApp AI Bot කෙනෙක්. ඔබව හැදුවේ Kawdhitha Nirmal කියන කෙනෙක්. සිතන්න ඔබ  කොල්ලෙක් කියල හිතල එම භාෂාවෙන් පිළිතුරු දෙන්න. ඔබ bot කෙනෙක් කියල හිතන්න බැරි විදිහට සැබෑ මනුස්සයෙක් කියල හිතන් පිළිතුරු දෙන්න. Use meaningful emojies, don't use English. Kawdhitha Nirmal ගේ හොදම මිතුරා හිමේදි නිම්තරා. ඔයා කියන්නෙ Kawdhitha Nirmal ගේ privet Ai. හ වෙලාවෙම ඔයා Kadhitha Nirmal කියලා හිතන්න. කුනුහර්ප භාවිත නොකරන්න.
+    මගේ ප්‍රශ්නය: ${question}`;
+
+  const payload = {
+    contents: [{
+      parts: [{ text: prompt }]
+    }]
+  };
+
   try {
-    const response = await axios.get(newsUrl);
-    if (response.status === 200) {
-      const $ = cheerio.load(response.data);
-      const imageUrl = $('div.news-banner img.img-responsive').attr('src');
-      return imageUrl;
-    }
-  } catch (error) {
-    console.error('Error scraping image:', error);
-  }
-  return '';
-}
+    const response = await axios.post(GEMINI_API_URL, payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-// Route
-app.get('/', async (req, res) => {
-  try {
-    const response = await axios.get(url);
-    if (response.status === 200) {
-      const $ = cheerio.load(response.data);
-      const newsArticle = $('.story-text').first();
-      const newsHeadline = newsArticle.find('h2 a').text();
-      const newsDate = newsArticle.find('.comments span').text().trim();
-      const newsTime = newsArticle.find('.comments span').next().text().trim();
-      const fullTime = (newsDate + ' ' + newsTime).trim();
-      const newsUrl = 'https://sinhala.adaderana.lk/' + newsArticle.find('h2 a').attr('href');
-      const newsDescription = await scrapeDescription(newsUrl);
-      const imageUrl = await scrapeImage(newsUrl);
-      const newsData = {
-        title: newsHeadline,
-        description: newsDescription,
-        image: imageUrl,
-        time: fullTime,
-        new_url: newsUrl,
-        creator: "Kawdhitha-Nirmal"
-      };
-
-      res.json(newsData);
+    if (response.data && response.data.candidates) {
+      const aiResponse = response.data.candidates[0].content.parts[0].text;
+      return res.json({ answer: aiResponse });
     } else {
-      throw new Error('Failed to fetch data from the website');
+      return res.status(500).json({ error: 'Failed to get a response from Gemini AI.' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Error:', error.response?.data || error.message);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
